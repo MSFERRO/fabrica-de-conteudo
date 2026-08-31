@@ -1,0 +1,14 @@
+Crie um roteiro de vídeo curto (YouTube Shorts) extremamente engajador sobre o tema: "{topic}".
+
+Siga estritamente as diretrizes abaixo:
+1. DURAÇÃO E COMPRIMENTO: O roteiro deve ter entre 130 e 150 palavras (adequado para uma narração de 45 a 60 segundos).
+2. IDIOMA: Português brasileiro falado de forma fluida, natural e dinâmica.
+3. ESTRUTURA DO ROTEIRO:
+   - GANCHO (0-5s): Comece imediatamente com uma pergunta ou fato chocante para reter a atenção do espectador (ex: "Você sabia que...?", "Este é o maior segredo que já te contaram sobre...").
+   - DESENVOLVIMENTO (5-45s): Apresente 3 fatos ou pontos surpreendentes e curiosos sobre o tema. Seja dinâmico, direto ao ponto e evite enrolações.
+   - CALL-TO-ACTION (CTA) (45-60s): Termine com um fechamento intrigante ou uma pergunta desafiadora para incentivar comentários, seguido de um pedido rápido para se inscrever/curtir (ex: "E você, o que faria se estivesse lá? Comente aqui e se inscreva para saber mais!").
+4. RESTRIÇÕES IMPORTANTES:
+   - NÃO use emojis.
+   - NÃO use nenhuma formatação Markdown (sem asteriscos, sem hashtags, sem negritos).
+   - NÃO use aspas ou parênteses para efeitos sonoros ou instruções de cena.
+   - Retorne APENAS o texto corrido que o narrador deve falar, palavra por palavra.

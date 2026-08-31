@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+.pytest_cache/
+
+# Config & Credentials
+.env
+youtube_credentials*.json
+client_secrets*.json
+
+# Data & Output
+content_factory.db
+output/
+logs/
+assets/backgrounds/*
+!assets/backgrounds/loops/
+!assets/backgrounds/loops/.gitkeep
+assets/music/*
+!assets/music/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
