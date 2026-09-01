@@ -41,18 +41,49 @@ class QuotaManager:
         """Retorna a data atual como string YYYY-MM-DD."""
         return datetime.utcnow().strftime("%Y-%m-%d")
 
+    def get_channels_config(self) -> List[dict]:
+        """Lê os perfis dos canais configurados em channels.json."""
+        import json
+        channels_file = settings.CONFIG_DIR / "channels.json"
+        if channels_file.exists():
+            try:
+                with open(channels_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Erro ao ler channels.json: {e}")
+        return []
+
+    def get_channel_info(self, channel: str) -> dict:
+        """Retorna o dicionário de configurações para um canal específico."""
+        configs = self.get_channels_config()
+        for c in configs:
+            if (c.get("channel_name") == channel or 
+                c.get("handle") == channel or 
+                c.get("channel_id") == channel or
+                channel in c.get("channel_name", "") or
+                channel in c.get("handle", "")):
+                return c
+        return configs[0] if configs else {}
+
     def get_index_for_channel(self, channel: str) -> int:
         """
         Retorna o índice correspondente ao canal.
-        Channel 1 (@CuriosidadeAutomáticasMSF) -> Índice 0 (youtube_credentials_1.json ou padrão)
-        Channel 2 (@MSFBot2) -> Índice 1 (youtube_credentials_2.json)
         """
-        if "@MSFBot2" in channel or "MSFBot2" in channel:
+        info = self.get_channel_info(channel)
+        cred_file = info.get("credentials_file", "")
+        if "2" in cred_file or "MSFBot2" in channel:
             return 1
         return 0
 
     def get_credentials_file_for_channel(self, channel: str) -> str:
         """Retorna o caminho do arquivo de credenciais associado ao canal."""
+        info = self.get_channel_info(channel)
+        cred_filename = info.get("credentials_file")
+        if cred_filename:
+            target = settings.CONFIG_DIR / cred_filename
+            if target.exists():
+                return str(target)
+                
         idx = self.get_index_for_channel(channel)
         if 0 <= idx < len(self.credentials_files):
             return self.credentials_files[idx]

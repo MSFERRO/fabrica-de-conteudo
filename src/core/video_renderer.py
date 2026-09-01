@@ -104,7 +104,7 @@ class VideoRenderer:
             return str(settings.MUSIC_DIR / selected)
         return None
 
-    async def render_video(self, bg_video_path: str, audio_path: str, job_id: int, needs_crop: bool = False) -> str:
+    async def render_video(self, bg_video_path: str, audio_path: str, job_id: int, needs_crop: bool = False, subtitle_color: str = "&H0000FFFF") -> str:
         """
         Orquestra o FFmpeg para juntar vídeo, áudio, música de fundo e queimar legendas.
         """
@@ -145,8 +145,8 @@ class VideoRenderer:
         else:
             video_filter += "scale=1080:1920,setsar=1,eq=contrast=1.12:saturation=1.3:brightness=0.01,"
         
-        # Legendas Dinâmicas Estilo MrBeast/Hormozi: Amarelo Ouro (#FFE600), Negrito, Contorno Preto 3.5px e Sombra 3D
-        video_filter += f"subtitles='{rel_srt_path}':force_style='Fontname=Arial,Fontsize=22,Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3.5,Shadow=2.0,BorderStyle=1,Alignment=2,MarginV=150'"
+        # Legendas Dinâmicas Estilo MrBeast/Hormozi com cor customizada
+        video_filter += f"subtitles='{rel_srt_path}':force_style='Fontname=Arial,Fontsize=22,Bold=1,PrimaryColour={subtitle_color},OutlineColour=&H00000000,Outline=3.5,Shadow=2.0,BorderStyle=1,Alignment=2,MarginV=150'"
 
         fade_start = max(0.0, duration - 1.5)
         if music_path:

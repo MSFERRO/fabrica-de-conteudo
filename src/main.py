@@ -80,9 +80,11 @@ async def run_pipeline_step(job: dict, trend_hunter: TrendHunter, script_writer:
     topic = job["topic"]
     keywords = job["keywords"].split(",") if job["keywords"] else ["curiosidades"]
     status = job["status"]
+    channel_name = job.get("channel") or "Cosmos Oculto"
+    ch_info = quota_manager.get_channel_info(channel_name)
 
     start_time = datetime.utcnow()
-    logger.info(f"Processando Job {job_id} | Tema: '{topic}' | Status Atual: {status}")
+    logger.info(f"Processando Job {job_id} | Canal: '{channel_name}' | Tema: '{topic}' | Status Atual: {status}")
 
     try:
         # ETAPA 1: Geração de Roteiro (OpenAI GPT-4o)
@@ -94,9 +96,10 @@ async def run_pipeline_step(job: dict, trend_hunter: TrendHunter, script_writer:
             log_event("script_writer", "generate_script", "success", topic, duration_ms)
             return True
 
-        # ETAPA 2: Conversão de Texto para Fala (TTS grátis via edge-tts)
+        # ETAPA 2: Conversão de Texto para Fala (Edge-TTS com voz personalizada por canal)
         elif status == "script_generated":
-            audio_path = await tts_engine.generate_narration(job["script"], job_id)
+            channel_voice = ch_info.get("voice", "pt-BR-FranciscaNeural")
+            audio_path = await tts_engine.generate_narration(job["script"], job_id, voice=channel_voice)
             await update_job_status(job_id, "audio_generated", audio_path=audio_path)
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
             log_event("tts_engine", "generate_audio", "success", topic, duration_ms)
@@ -110,10 +113,11 @@ async def run_pipeline_step(job: dict, trend_hunter: TrendHunter, script_writer:
             log_event("asset_downloader", "download_video", "success", topic, duration_ms)
             return True
 
-        # ETAPA 4: Edição/Renderização com FFmpeg e Legendas faster-whisper
+        # ETAPA 4: Edição/Renderização com FFmpeg, Legendas e Paleta do Canal
         elif status == "downloaded":
+            sub_color = ch_info.get("subtitle_color", "&H0000FFFF")
             final_video_path = await renderer.render_video(
-                job["video_path"], job["audio_path"], job_id
+                job["video_path"], job["audio_path"], job_id, subtitle_color=sub_color
             )
             
             is_valid, reason = await validate_video(final_video_path)
@@ -127,7 +131,7 @@ async def run_pipeline_step(job: dict, trend_hunter: TrendHunter, script_writer:
 
         # ETAPA 5: Upload e Agendamento para o YouTube (YouTube Data API v3 com gerenciamento de cota)
         elif status == "rendered":
-            channel = job["channel"] or "@CuriosidadeAutomáticasMSF"
+            channel = job["channel"] or ch_info.get("channel_name", "@CuriosidadeAutomáticasMSF")
             # Verifica se há cota disponível no canal específico (custo: 1600 unidades)
             quota_available = await quota_manager.check_quota_for_channel(channel, 1600)
             if not quota_available:
@@ -246,26 +250,34 @@ async def main():
                     downloader, renderer, quota_manager
                 )
             else:
-                logger.info("Fila de processamento vazia. Buscando novas tendências...")
-                trends = await trend_hunter.hunt_trends(niche="curiosidades e ciência")
+                logger.info("Fila de processamento vazia. Buscando novas tendências para os canais...")
+                channels_config = quota_manager.get_channels_config()
+                if not channels_config:
+                    channels_config = [
+                        {"channel_name": "Cosmos Oculto", "niche": "Astronomia e Mistérios do Universo"},
+                        {"channel_name": "Mente Sombria", "niche": "Psicologia Oculta e Segredos da Mente"}
+                    ]
                 
                 added_count = 0
-                channels = ["@CuriosidadeAutomáticasMSF", "@MSFBot2"]
-                for item in trends:
-                    for channel in channels:
+                for ch in channels_config:
+                    niche = ch.get("niche", "curiosidades e ciência")
+                    ch_name = ch.get("channel_name", ch.get("handle"))
+                    logger.info(f"Buscando temas virais para o canal '{ch_name}' no nicho: '{niche}'...")
+                    trends = await trend_hunter.hunt_trends(niche=niche)
+                    for item in trends:
                         success = await add_video_job(
                             topic=item["topic"],
                             keywords=item["keywords"],
                             viral_score=item["viral_score"],
-                            channel=channel
+                            channel=ch_name
                         )
                         if success:
                             added_count += 1
                 
                 if added_count > 0:
-                    logger.info(f"Novas tendências adicionadas à fila: {added_count} novos tópicos.")
+                    logger.info(f"Novas tendências adicionadas à fila: {added_count} novos tópicos distintos.")
                 else:
-                    logger.info("Nenhum tópico novo encontrado nesta rodada. Aguardando...")
+                    logger.info("Nenhum tópico novo adicionado nesta rodada. Aguardando...")
             
             await asyncio.sleep(15)
 

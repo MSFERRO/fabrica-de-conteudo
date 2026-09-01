@@ -1,0 +1,38 @@
+[
+  {
+    "channel_id": "channel_1",
+    "channel_name": "Cosmos Oculto",
+    "handle": "@CosmosOcultoOficial",
+    "niche": "Astronomia, Mistérios do Universo, Ciência e Futuro",
+    "credentials_file": "youtube_credentials_1.json",
+    "client_secrets_file": "client_secrets_1.json",
+    "voice": "pt-BR-AntonioNeural",
+    "subtitle_color": "&H0000FFFF",
+    "subtitle_font": "Arial",
+    "allowed_formats": ["shorts", "long_form"],
+    "prompt_style": "documental, épico, fatos científicos surpreendentes sobre buracos negros, galáxias, tempo, física e os maiores mistérios do universo.",
+    "publishing_schedule": {
+      "shorts_per_day": 2,
+      "long_videos_per_week": 2,
+      "interval_hours": 4
+    }
+  },
+  {
+    "channel_id": "channel_2",
+    "channel_name": "Mente Sombria",
+    "handle": "@MenteSombriaShorts",
+    "niche": "Psicologia Oculta, Segredos da Mente Humana, Vieses Cognitivos e Curiosidades Bizarras",
+    "credentials_file": "youtube_credentials_2.json",
+    "client_secrets_file": "client_secrets_2.json",
+    "voice": "pt-BR-FranciscaNeural",
+    "subtitle_color": "&H0014E5FF",
+    "subtitle_font": "Arial",
+    "allowed_formats": ["shorts", "long_form"],
+    "prompt_style": "psicológico, envolvente, suspense, segredos do comportamento humano, ilusões mentais, truques de manipulação e mistérios do cérebro.",
+    "publishing_schedule": {
+      "shorts_per_day": 2,
+      "long_videos_per_week": 2,
+      "interval_hours": 4
+    }
+  }
+]
