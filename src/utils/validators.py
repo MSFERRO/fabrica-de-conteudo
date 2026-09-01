@@ -44,16 +44,16 @@ def validate_script(script: str) -> Tuple[bool, str]:
 
 async def get_video_metadata(video_path: str) -> Dict[str, Any]:
     """
-    Usa o ffprobe para extrair metadados do vídeo (resolução, duração).
+    Usa o ffprobe para extrair metadados exatos do arquivo de mídia (resolução, duração).
+    Suporta tanto arquivos de vídeo (MP4) quanto de áudio (MP3, WAV).
     """
     if not os.path.exists(video_path):
-        raise FileNotFoundError(f"Vídeo não encontrado para inspeção: {video_path}")
+        raise FileNotFoundError(f"Arquivo não encontrado para inspeção: {video_path}")
 
     cmd = [
         "ffprobe", 
         "-v", "error", 
-        "-select_streams", "v:0", 
-        "-show_entries", "stream=width,height,duration", 
+        "-show_entries", "format=duration:stream=width,height,duration", 
         "-of", "json", 
         video_path
     ]
@@ -71,15 +71,30 @@ async def get_video_metadata(video_path: str) -> Dict[str, Any]:
             return {}
 
         data = json.loads(stdout.decode())
+        result = {}
+        
+        # Extrai duração do formato geral (funciona para áudio e vídeo)
+        format_info = data.get("format", {})
+        if "duration" in format_info:
+            try:
+                result["duration"] = float(format_info["duration"])
+            except (ValueError, TypeError):
+                pass
+
+        # Extrai resolução do stream de vídeo, se existir
         streams = data.get("streams", [])
-        if streams:
-            stream = streams[0]
-            return {
-                "width": int(stream.get("width", 0)),
-                "height": int(stream.get("height", 0)),
-                "duration": float(stream.get("duration", 0.0))
-            }
-        return {}
+        for stream in streams:
+            if "width" in stream and "height" in stream:
+                result["width"] = int(stream["width"])
+                result["height"] = int(stream["height"])
+                if "duration" in stream and "duration" not in result:
+                    try:
+                        result["duration"] = float(stream["duration"])
+                    except (ValueError, TypeError):
+                        pass
+                break
+                
+        return result
     except Exception as e:
         logger.error(f"Falha ao rodar ffprobe no arquivo {video_path}: {e}")
         return {}

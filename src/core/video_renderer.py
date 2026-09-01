@@ -117,8 +117,10 @@ class VideoRenderer:
 
         # Obtém a duração exata do áudio de narração
         metadata = await get_video_metadata(audio_path)
-        duration = metadata.get("duration", 45.0)
-        logger.info(f"Duração detectada para renderização: {duration:.2f} segundos")
+        audio_duration = metadata.get("duration", 45.0)
+        # Adiciona 1.2s de respiro ao final para a fala e call-to-action nunca serem cortados
+        duration = audio_duration + 1.2
+        logger.info(f"Duração exata do áudio: {audio_duration:.2f}s | Duração total renderizada: {duration:.2f}s")
 
         # Auto-detecção de orientação do vídeo de fundo
         bg_metadata = await get_video_metadata(bg_video_path)
@@ -146,18 +148,19 @@ class VideoRenderer:
         # Legendas Dinâmicas Estilo MrBeast/Hormozi: Amarelo Ouro (#FFE600), Negrito, Contorno Preto 3.5px e Sombra 3D
         video_filter += f"subtitles='{rel_srt_path}':force_style='Fontname=Arial,Fontsize=22,Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3.5,Shadow=2.0,BorderStyle=1,Alignment=2,MarginV=150'"
 
+        fade_start = max(0.0, duration - 1.5)
         if music_path:
             cmd.extend(["-stream_loop", "-1", "-i", music_path])
             filter_complex = (
                 f"[0:v]{video_filter}[v];"
-                f"[1:a]volume=1.0[a1];"
-                f"[2:a]volume=0.15[a2];"
-                f"[a1][a2]amix=inputs=2:duration=first:dropout_transition=2[a]"
+                f"[1:a]apad=pad_dur=1.5,volume=1.0[a1];"
+                f"[2:a]volume=0.12,afade=t=out:st={fade_start:.2f}:d=1.5[a2];"
+                f"[a1][a2]amix=inputs=2:duration=longest:dropout_transition=2[a]"
             )
             cmd.extend(["-filter_complex", filter_complex])
             cmd.extend(["-map", "[v]", "-map", "[a]"])
         else:
-            filter_complex = f"[0:v]{video_filter}[v];[1:a]volume=1.0[a]"
+            filter_complex = f"[0:v]{video_filter}[v];[1:a]apad=pad_dur=1.5,volume=1.0[a]"
             cmd.extend(["-filter_complex", filter_complex])
             cmd.extend(["-map", "[v]", "-map", "[a]"])
 
