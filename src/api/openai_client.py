@@ -55,6 +55,42 @@ class OpenAIClient:
         content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
         content = content.strip()
         
+    def generate_viral_trends(self, niche: str = "ciência e curiosidades", count: int = 5) -> List[Dict[str, Any]]:
+        """Gera temas virais frescos e de alta retenção diretamente com GPT-4o."""
+        prompt = f"""
+        Você é um estrategista sênior de conteúdo viral para YouTube Shorts.
+        Crie uma lista de {count} tópicos inéditos, fascinantes e de alta retenção no nicho de "{niche}".
+        
+        Critérios dos temas:
+        - Devem explorar "curiosity gaps", mistérios surpreendentes, psicologia comportamental, astronomia ou fatos bizarros da história/ciência.
+        - Devem ter títulos provocativos e que prendam a atenção nos primeiros 3 segundos.
+        - Cada tópico deve conter de 3 a 5 palavras-chave em inglês e português para busca de imagens/vídeos de fundo.
+        - Atribua uma pontuação de viralidade (viral_score) de 85 a 99 para cada um.
+        
+        Regras de formato ESTRITAS:
+        1. Retorne APENAS um array JSON válido, sem comentários, sem markdown.
+        2. Formato:
+        [
+          {{
+            "topic": "Título impactante em Português",
+            "keywords": ["space", "black hole", "universo", "astronomia"],
+            "viral_score": 96
+          }}
+        ]
+        """
+        response = self.client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.85,
+            max_tokens=1000
+        )
+        
+        content = response.choices[0].message.content.strip()
+        content = re.sub(r'^```json\s*', '', content, flags=re.MULTILINE)
+        content = re.sub(r'^```\s*', '', content, flags=re.MULTILINE)
+        content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
+        content = content.strip()
+        
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
@@ -64,7 +100,7 @@ class OpenAIClient:
                     return json.loads(match.group(0))
                 except json.JSONDecodeError:
                     pass
-            raise ValueError(f"Falha ao decodificar JSON da resposta do OpenAI. Resposta: {content}") from e
+            raise ValueError(f"Falha ao decodificar JSON de tendências do OpenAI: {content}") from e
 
     def generate_script(self, topic: str, duration_seconds: int = 60) -> str:
         """Gera o roteiro final baseado no tópico aprovado."""

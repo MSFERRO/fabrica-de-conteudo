@@ -103,33 +103,44 @@ class AssetDownloader:
         dest_filename = f"bg_{job_id}.mp4"
         dest_path = str(settings.BACKGROUNDS_DIR / dest_filename)
 
-        try:
-            # 1. Tentativa: Vídeo Vertical específico
-            logger.info(f"Tentativa 1: Buscando vídeo vertical no Pexels para '{query}'")
-            search_result = await self.pexels_client.search_videos(query, orientation="portrait", per_page=10)
-            if search_result and search_result.get("videos"):
-                candidate = self._select_candidate_video(search_result["videos"], min_duration=40)
-                if candidate:
-                    download_url = self._get_best_video_file(candidate)
-                    if download_url:
-                        success = await self.pexels_client.download_video(download_url, dest_path)
-                        if success:
-                            return dest_path, False
-            
-            # 2. Tentativa: Vídeo Horizontal específico (exige Crop)
-            logger.info(f"Tentativa 2: Vídeo vertical não encontrado. Buscando vídeo horizontal para '{query}'...")
-            search_result = await self.pexels_client.search_videos(query, orientation="landscape", per_page=10)
-            if search_result and search_result.get("videos"):
-                candidate = self._select_candidate_video(search_result["videos"], min_duration=40)
-                if candidate:
-                    download_url = self._get_best_video_file(candidate)
-                    if download_url:
-                        success = await self.pexels_client.download_video(download_url, dest_path)
-                        if success:
-                            logger.info(f"Vídeo horizontal baixado. Necessita de corte 9:16.")
-                            return dest_path, True
+        candidate = None
+        needs_crop = False
+        
+        # Cria lista de termos de busca inteligentes
+        search_terms = []
+        if len(keywords) >= 2:
+            search_terms.append(f"{keywords[0]} {keywords[1]}")
+        search_terms.extend(keywords[:3])
+        search_terms.append("4k background loop cinematic")
 
-            logger.warning(f"Sem resultados para '{query}' no Pexels. Iniciando cascata de fallback...")
+        try:
+            for term in search_terms:
+                # 1. Tentativa: Vídeo Vertical específico
+                logger.info(f"Buscando vídeo vertical no Pexels para termo: '{term}'")
+                search_result = await self.pexels_client.search_videos(term, orientation="portrait", per_page=15)
+                if search_result and search_result.get("videos"):
+                    candidate = self._select_candidate_video(search_result["videos"], min_duration=15)
+                    if candidate:
+                        download_url = self._get_best_video_file(candidate)
+                        if download_url:
+                            success = await self.pexels_client.download_video(download_url, dest_path)
+                            if success:
+                                return dest_path, False
+
+                # 2. Tentativa: Vídeo Horizontal (com corte 9:16)
+                logger.info(f"Buscando vídeo horizontal no Pexels para termo: '{term}'")
+                search_result = await self.pexels_client.search_videos(term, orientation="landscape", per_page=15)
+                if search_result and search_result.get("videos"):
+                    candidate = self._select_candidate_video(search_result["videos"], min_duration=15)
+                    if candidate:
+                        download_url = self._get_best_video_file(candidate)
+                        if download_url:
+                            success = await self.pexels_client.download_video(download_url, dest_path)
+                            if success:
+                                logger.info("Vídeo horizontal baixado. Necessita de corte 9:16.")
+                                return dest_path, True
+
+            logger.warning(f"Sem resultados específicos no Pexels. Iniciando cascata de fallback...")
             
         except Exception as e:
             logger.error(f"Erro ao interagir com Pexels para baixar vídeo: {e}")

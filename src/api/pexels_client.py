@@ -56,7 +56,7 @@ class PexelsClient:
                         return False
                     
                     with open(output_path, "wb") as f:
-                        async for chunk in response.iter_bytes(chunk_size=8192):
+                        async for chunk in response.aiter_bytes(chunk_size=8192):
                             f.write(chunk)
                             
                 logger.info(f"Vídeo baixado com sucesso em: {output_path}")

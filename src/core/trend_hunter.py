@@ -84,52 +84,22 @@ class TrendHunter:
 
     async def hunt_trends(self, niche: str = "ciência e curiosidades") -> List[Dict[str, Any]]:
         """
-        Coleta dados do Google Trends e do Reddit, envia para curadoria da OpenAI.
-        Se houver qualquer falha de rede ou parsing, ativa o fallback de temas evergreen.
+        Gera tendências virais e de alta retenção diretamente com GPT-4o.
+        Caso haja falha de conexão com a OpenAI, ativa os tópicos evergreen de segurança.
         """
-        logger.info("Iniciando caça por tendências...")
+        logger.info(f"Caçando temas virais de alta retenção com GPT-4o para o nicho '{niche}'...")
         try:
-            google_task = self._fetch_google_trends()
-            reddit_til_task = self._fetch_reddit_hot("todayilearned")
-            reddit_space_task = self._fetch_reddit_hot("space")
-
-            google_trends, reddit_til, reddit_space = await asyncio.gather(
-                google_task, reddit_til_task, reddit_space_task,
-                return_exceptions=True
+            trends = await asyncio.to_thread(
+                self.openai_client.generate_viral_trends,
+                niche,
+                5
             )
-
-            google_trends = google_trends if not isinstance(google_trends, Exception) else []
-            reddit_til = reddit_til if not isinstance(reddit_til, Exception) else []
-            reddit_space = reddit_space if not isinstance(reddit_space, Exception) else []
-
-            raw_lines = []
-            if google_trends:
-                raw_lines.append("=== GOOGLE TRENDS BRASIL ===")
-                raw_lines.extend(google_trends[:15])
-            if reddit_til:
-                raw_lines.append("=== REDDIT r/todayilearned ===")
-                raw_lines.extend(reddit_til[:10])
-            if reddit_space:
-                raw_lines.append("=== REDDIT r/space ===")
-                raw_lines.extend(reddit_space[:10])
-
-            if not raw_lines or len(raw_lines) < 5:
-                raise ValueError("Pouco ou nenhum dado bruto pôde ser coletado das fontes primárias.")
-
-            raw_data_str = "\n".join(raw_lines)
-            logger.info("Dados brutos coletados. Enviando para OpenAI curar os melhores tópicos...")
-            
-            trends = self.openai_client.curate_trends(raw_data_str, niche=niche)
-            
             if not trends:
-                raise ValueError("A resposta de curadoria do OpenAI não retornou tópicos válidos.")
+                raise ValueError("A resposta do OpenAI não retornou tópicos válidos.")
                 
-            logger.info(f"Caça de tendências finalizada com sucesso. {len(trends)} tópicos encontrados.")
+            logger.info(f"GPT-4o gerou {len(trends)} novos temas virais com sucesso.")
             return trends
 
         except Exception as e:
-            logger.error(f"Erro durante a caça de tendências: {e}. Ativando fallback de tópicos evergreen...")
-            await send_alert(
-                f"⚠️ *Alerta de Fallback*: Falha ao caçar tendências ({e}). Usando tópicos evergreen."
-            )
+            logger.warning(f"Aviso na geração de tendências pela OpenAI: {e}. Utilizando lista de segurança.")
             return EVERGREEN_TOPICS

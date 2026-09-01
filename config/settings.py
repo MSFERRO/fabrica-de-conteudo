@@ -9,6 +9,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = BASE_DIR / "config" / ".env"
 load_dotenv(dotenv_path=ENV_PATH)
 
+# Desabilita symlinks do HuggingFace no Windows para usuários sem modo desenvolvedor
+os.environ["HF_HUB_DISABLE_SYMLINKS"] = "1"
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+
+# Auto-detecta caminhos comuns do FFmpeg no Windows (WinGet)
+import glob
+local_app_data = os.environ.get("LOCALAPPDATA", "")
+if local_app_data:
+    ffmpeg_winget_dirs = glob.glob(os.path.join(local_app_data, "Microsoft", "WinGet", "Packages", "*ffmpeg*", "*", "bin"))
+    ffmpeg_links = os.path.join(local_app_data, "Microsoft", "WinGet", "Links")
+    for extra_path in ffmpeg_winget_dirs + [ffmpeg_links]:
+        if os.path.exists(extra_path) and extra_path not in os.environ["PATH"]:
+            os.environ["PATH"] = extra_path + os.pathsep + os.environ["PATH"]
+
 # Configurações de API
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY")

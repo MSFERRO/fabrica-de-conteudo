@@ -33,6 +33,15 @@ class TelegramAlertBot:
                 if response.status_code == 200:
                     logger.info("Alerta enviado com sucesso para o Telegram.")
                     return True
+                elif response.status_code == 400:
+                    # Tenta reenviar sem parse_mode caso haja caracteres especiais não escapados
+                    payload.pop("parse_mode", None)
+                    retry_resp = await client.post(url, json=payload)
+                    if retry_resp.status_code == 200:
+                        logger.info("Alerta enviado com sucesso para o Telegram (modo texto simples).")
+                        return True
+                    logger.error(f"Erro ao enviar alerta ao Telegram. Status: {retry_resp.status_code}. Detalhe: {retry_resp.text}")
+                    return False
                 else:
                     logger.error(f"Erro ao enviar alerta ao Telegram. Status: {response.status_code}. Detalhe: {response.text}")
                     return False

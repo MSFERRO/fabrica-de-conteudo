@@ -131,20 +131,23 @@ class VideoRenderer:
         music_path = self._select_random_bg_music()
 
         cmd = ["ffmpeg", "-y"]
-        cmd.extend(["-i", bg_video_path])
+        cmd.extend(["-stream_loop", "-1", "-i", bg_video_path])
         cmd.extend(["-i", audio_path])
 
-        srt_filter_path = srt_path.replace("\\", "/").replace(":", "\\:")
+        rel_srt_path = os.path.relpath(srt_path, str(settings.BASE_DIR)).replace("\\", "/")
         
         video_filter = ""
         if needs_crop:
-            # Fórmula exata solicitada: crop centralizado 9:16
-            video_filter += "crop=w=ih*(9/16):h=ih:x=(in_w-out_w)/2:y=0,"
+            # Crop centralizado 9:16 + Escala Full HD 1080x1920 + Color Grading (Cores Vivas e Contraste)
+            video_filter += "crop=w=ih*(9/16):h=ih:x=(in_w-out_w)/2:y=0,scale=1080:1920,setsar=1,eq=contrast=1.12:saturation=1.3:brightness=0.01,"
+        else:
+            video_filter += "scale=1080:1920,setsar=1,eq=contrast=1.12:saturation=1.3:brightness=0.01,"
         
-        video_filter += f"subtitles={srt_filter_path}:force_style='Fontname=Arial,Fontsize=18,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2.5,BorderStyle=1,Alignment=2,MarginV=120'"
+        # Legendas Dinâmicas Estilo MrBeast/Hormozi: Amarelo Ouro (#FFE600), Negrito, Contorno Preto 3.5px e Sombra 3D
+        video_filter += f"subtitles='{rel_srt_path}':force_style='Fontname=Arial,Fontsize=22,Bold=1,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,Outline=3.5,Shadow=2.0,BorderStyle=1,Alignment=2,MarginV=150'"
 
         if music_path:
-            cmd.extend(["-i", music_path])
+            cmd.extend(["-stream_loop", "-1", "-i", music_path])
             filter_complex = (
                 f"[0:v]{video_filter}[v];"
                 f"[1:a]volume=1.0[a1];"
@@ -171,6 +174,7 @@ class VideoRenderer:
         
         proc = await asyncio.create_subprocess_exec(
             *cmd,
+            cwd=str(settings.BASE_DIR),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
