@@ -258,21 +258,29 @@ async def main():
                         {"channel_name": "Mente Sombria", "niche": "Psicologia Oculta e Segredos da Mente"}
                     ]
                 
-                added_count = 0
+                channel_trends = {}
                 for ch in channels_config:
                     niche = ch.get("niche", "curiosidades e ciência")
                     ch_name = ch.get("channel_name", ch.get("handle"))
                     logger.info(f"Buscando temas virais para o canal '{ch_name}' no nicho: '{niche}'...")
                     trends = await trend_hunter.hunt_trends(niche=niche)
-                    for item in trends:
-                        success = await add_video_job(
-                            topic=item["topic"],
-                            keywords=item["keywords"],
-                            viral_score=item["viral_score"],
-                            channel=ch_name
-                        )
-                        if success:
-                            added_count += 1
+                    channel_trends[ch_name] = trends
+
+                added_count = 0
+                # Intercala os tópicos entre os canais (1 do Canal 1, 1 do Canal 2, etc.)
+                max_len = max([len(t) for t in channel_trends.values()]) if channel_trends else 0
+                for i in range(max_len):
+                    for ch_name, items in channel_trends.items():
+                        if i < len(items):
+                            item = items[i]
+                            success = await add_video_job(
+                                topic=item["topic"],
+                                keywords=item["keywords"],
+                                viral_score=item["viral_score"],
+                                channel=ch_name
+                            )
+                            if success:
+                                added_count += 1
                 
                 if added_count > 0:
                     logger.info(f"Novas tendências adicionadas à fila: {added_count} novos tópicos distintos.")

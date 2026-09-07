@@ -145,8 +145,8 @@ class VideoRenderer:
         else:
             video_filter += "scale=1080:1920,setsar=1,eq=contrast=1.12:saturation=1.3:brightness=0.01,"
         
-        # Legendas Dinâmicas Estilo MrBeast/Hormozi com cor customizada
-        video_filter += f"subtitles='{rel_srt_path}':force_style='Fontname=Arial,Fontsize=22,Bold=1,PrimaryColour={subtitle_color},OutlineColour=&H00000000,Outline=3.5,Shadow=2.0,BorderStyle=1,Alignment=2,MarginV=150'"
+        # Legendas Elegantes e Discretas: Fonte 15, Negrito, Contorno 2.0px, Sombra 1.0px no terço inferior (o vídeo é o protagonista)
+        video_filter += f"subtitles='{rel_srt_path}':force_style='Fontname=Arial,Fontsize=15,Bold=1,PrimaryColour={subtitle_color},OutlineColour=&H00000000,Outline=2.0,Shadow=1.0,BorderStyle=1,Alignment=2,MarginV=110'"
 
         fade_start = max(0.0, duration - 1.5)
         if music_path:
@@ -167,6 +167,7 @@ class VideoRenderer:
         cmd.extend([
             "-t", f"{duration:.3f}",
             "-c:v", "libx264",
+            "-preset", "veryfast",
             "-pix_fmt", "yuv420p",
             "-c:a", "aac",
             "-b:a", "192k",
