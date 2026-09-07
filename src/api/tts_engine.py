@@ -1,6 +1,7 @@
 import os
 import logging
 import edge_tts
+from typing import Optional
 from config import settings
 
 logger = logging.getLogger("content_factory.tts_engine")
@@ -9,18 +10,18 @@ class TTSEngine:
     def __init__(self):
         self.voice = settings.EDGE_TTS_VOICE
 
-    async def generate_narration(self, text: str, job_id: int) -> str:
+    async def generate_narration(self, text: str, job_id: int, voice: Optional[str] = None) -> str:
         """
         Gera o áudio de narração (.mp3) usando a biblioteca edge-tts (Microsoft Neural Voices).
         Retorna o caminho completo do arquivo gerado.
         """
+        selected_voice = voice or self.voice
         filename = f"narration_{job_id}.mp3"
         output_path = str(settings.ASSETS_DIR / filename)
         
-        logger.info(f"Gerando áudio via edge-tts (Voz: {self.voice}) para o Job {job_id}...")
+        logger.info(f"Gerando áudio via edge-tts (Voz: {selected_voice}) para o Job {job_id}...")
         try:
-            # O edge-tts usa um fluxo assíncrono para obter e salvar o áudio
-            communicate = edge_tts.Communicate(text, self.voice)
+            communicate = edge_tts.Communicate(text, selected_voice)
             await communicate.save(output_path)
             
             if os.path.exists(output_path) and os.path.getsize(output_path) > 0:

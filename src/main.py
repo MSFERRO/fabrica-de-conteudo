@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import settings
 from src.api.openai_client import OpenAIClient
-from src.api.tts_engine import TTSEngine
+from src.core.tts_engine import TTSEngine
 from src.api.pexels_client import PexelsClient
 from src.core.quota_manager import QuotaManager
 from src.core.trend_hunter import TrendHunter

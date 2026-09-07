@@ -71,7 +71,7 @@ class QuotaManager:
         """
         info = self.get_channel_info(channel)
         cred_file = info.get("credentials_file", "")
-        if "2" in cred_file or "MSFBot2" in channel:
+        if "2" in cred_file or "Mente Curiosa" in channel or "MSFBot2" in channel:
             return 1
         return 0
 
